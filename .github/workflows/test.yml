@@ -1,0 +1,43 @@
+name: Test Git Time Stats Action
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "action.yml"
+      - "git_time_estimator.py"
+      - "scripts/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup test README
+        run: |
+          echo "# Test README" > test-readme.md
+          echo "" >> test-readme.md
+          echo "<!-- START_GIT_TIME_STATS -->" >> test-readme.md
+          echo "<!-- END_GIT_TIME_STATS -->" >> test-readme.md
+
+      - name: Test Git Time Stats Action
+        id: git-time-stats
+        uses: ./
+        with:
+          readme-path: "test-readme.md"
+          session-gap: "30"
+          min-session: "5"
+          max-session: "8"
+
+      - name: Display stats
+        run: |
+          echo "Stats output:"
+          echo "${{ steps.git-time-stats.outputs.stats }}"
+          echo "README changed: ${{ steps.git-time-stats.outputs.changed }}"
+          cat test-readme.md

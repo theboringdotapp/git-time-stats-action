@@ -1,0 +1,44 @@
+name: Update README with Git Time Stats
+
+on:
+  # Run daily at midnight
+  schedule:
+    - cron: '0 0 * * *'
+  
+  # Run on push to main branch
+  push:
+    branches:
+      - main
+  
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed to push changes to README
+    
+    steps:
+      - name: Checkout repository with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for accurate stats
+      
+      - name: Calculate Git Time Stats
+        id: git-time-stats
+        uses: theboringdotapp/git-time-stats-action@v1
+        with:
+          session-gap: 30      # Minutes gap between sessions (default: 30)
+          min-session: 5       # Minimum session duration in minutes (default: 5)
+          max-session: 8       # Maximum session duration in hours (default: 8)
+          readme-path: 'README.md'
+      
+      - name: Commit and push if README changed
+        if: steps.git-time-stats.outputs.changed == 'true'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          git commit -m "docs: Update time stats in README [skip ci]"
+          git push 
