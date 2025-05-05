@@ -33,12 +33,5 @@ jobs:
           min-session: 5       # Minimum session duration in minutes (default: 5)
           max-session: 8       # Maximum session duration in hours (default: 8)
           readme-path: 'README.md'
-      
-      - name: Commit and push if README changed
-        if: steps.git-time-stats.outputs.changed == 'true'
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add README.md
-          git commit -m "docs: Update time stats in README [skip ci]"
-          git push 
+          commit-changes: 'true'
+          commit-message: 'docs: Update time stats in README [skip ci]' 

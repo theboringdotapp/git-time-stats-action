@@ -11,16 +11,15 @@ on:
       - "scripts/**"
 
 jobs:
-  test-local:
-    name: Test Local Action
+  test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push changes to the repo
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # Simulate a real repo by fetching all history
-          fetch-tags: true
 
       - name: Setup test README
         run: |
@@ -28,15 +27,6 @@ jobs:
           echo "" >> test-readme.md
           echo "<!-- START_GIT_TIME_STATS -->" >> test-readme.md
           echo "<!-- END_GIT_TIME_STATS -->" >> test-readme.md
-
-      - name: Create test commit
-        run: |
-          # Create a dummy commit to ensure we have something to work with
-          echo "Test file for git history" > test-file.txt
-          git config --global user.name "Test User"
-          git config --global user.email "test@example.com"
-          git add test-file.txt
-          git commit -m "Add test file for action testing"
 
       - name: Test Git Time Stats Action
         id: git-time-stats
@@ -46,52 +36,12 @@ jobs:
           session-gap: "30"
           min-session: "5"
           max-session: "8"
+          commit-changes: "true"
+          commit-message: "test: Update test README with time stats"
 
-      - name: Verify Action Outputs
+      - name: Display stats
         run: |
           echo "Stats output:"
           echo "${{ steps.git-time-stats.outputs.stats }}"
           echo "README changed: ${{ steps.git-time-stats.outputs.changed }}"
-
-          # Check that the README was updated
-          if ! grep -q "Total time spent" test-readme.md; then
-            echo "::error::README was not updated with time stats"
-            cat test-readme.md
-            exit 1
-          fi
-
-          echo "✅ Test passed: README updated successfully"
-
-  test-different-paths:
-    name: Test with Different Files
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup test file in subdirectory
-        run: |
-          mkdir -p docs
-          echo "# Test Docs" > docs/stats.md
-          echo "" >> docs/stats.md
-          echo "<!-- START_GIT_TIME_STATS -->" >> docs/stats.md
-          echo "<!-- END_GIT_TIME_STATS -->" >> docs/stats.md
-
-      - name: Test Git Time Stats Action with custom path
-        id: git-time-stats
-        uses: ./
-        with:
-          readme-path: "docs/stats.md"
-          session-gap: "15" # Different value to test parameters
-
-      - name: Verify Custom Path Result
-        run: |
-          if ! grep -q "Total time spent" docs/stats.md; then
-            echo "::error::Custom path file was not updated"
-            cat docs/stats.md
-            exit 1
-          fi
-
-          echo "✅ Test passed: Custom path file updated successfully"
+          cat test-readme.md

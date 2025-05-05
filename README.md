@@ -9,6 +9,7 @@ A GitHub Action that calculates and reports time spent on a repository based on 
 - Filters out bot commits (e.g., from GitHub Actions)
 - Can automatically update your README with the latest stats
 - Customizable session parameters
+- Option to commit changes directly back to the repository
 
 ## Usage
 
@@ -21,6 +22,7 @@ Add the following to your GitHub workflow:
   uses: theboringdotapp/git-time-stats-action@v1
   with:
     readme-path: 'README.md'  # Default is README.md
+    commit-changes: 'true'    # Auto-commit the changes back to the repository
 ```
 
 Make sure your README.md contains these markers where the stats should be inserted:
@@ -53,33 +55,28 @@ jobs:
           fetch-depth: 0  # Need full history for accurate stats
 
       - name: Calculate Git Time Stats
+        id: git-time-stats
         uses: theboringdotapp/git-time-stats-action@v1
         with:
           session-gap: 30      # Minutes gap between sessions
           min-session: 5       # Minimum session duration in minutes
           max-session: 8       # Maximum session duration in hours
           readme-path: 'README.md'
-          update-readme: 'true'
-
-      - name: Commit and Push Changes
-        if: steps.git-time-stats.outputs.changed == 'true'
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add README.md
-          git commit -m "chore: Update README stats [skip ci]"
-          git push
+          commit-changes: 'true'
+          commit-message: 'docs: Update time stats [skip ci]'
 ```
 
 ## Inputs
 
-| Input          | Description                                  | Required | Default   |
-|----------------|----------------------------------------------|----------|-----------|
-| session-gap    | Time gap in minutes between sessions         | No       | 30        |
-| min-session    | Minimum session duration in minutes          | No       | 5         |
-| max-session    | Maximum session duration in hours            | No       | 8         |
-| readme-path    | Path to the README file to update            | No       | README.md |
-| update-readme  | Whether to update the README with the stats  | No       | true      |
+| Input           | Description                                        | Required | Default                                |
+|-----------------|----------------------------------------------------|----------|----------------------------------------|
+| session-gap     | Time gap in minutes between sessions               | No       | 30                                     |
+| min-session     | Minimum session duration in minutes                | No       | 5                                      |
+| max-session     | Maximum session duration in hours                  | No       | 8                                      |
+| readme-path     | Path to the README file to update                  | No       | README.md                              |
+| update-readme   | Whether to update the README with the stats        | No       | true                                   |
+| commit-changes  | Whether to commit changes back to the repository   | No       | false                                  |
+| commit-message  | Commit message to use when committing changes      | No       | docs: Update time stats in README [skip ci] |
 
 ## Outputs
 
@@ -101,16 +98,6 @@ jobs:
 - alice: 25h 15m (59.4%)
 - bob: 17h 15m (40.6%)
 ```
-
-## Troubleshooting
-
-### "Error: Not a git repository"
-
-If you encounter an error like `Error: Not a git repository`, make sure:
-
-1. You have properly checked out your repository with `actions/checkout` before calling this action
-2. You're using `fetch-depth: 0` with checkout to ensure full git history is available
-3. You're using the latest version of this action
 
 ## License
 

@@ -9,34 +9,20 @@ import os
 def check_git_repo():
     """Check if the current directory is a git repository."""
     try:
-        # Try to get the git root directory to ensure we're in a valid repo
-        result = subprocess.run(['git', 'rev-parse', '--show-toplevel'], 
+        subprocess.run(['git', 'rev-parse', '--is-inside-work-tree'], 
                       check=True, capture_output=True, text=True)
-        # If successful, print the root directory to stderr for debugging
-        if os.environ.get('GITHUB_ACTIONS'):
-            print(f"Git repository found at: {result.stdout.strip()}", file=sys.stderr)
         return True
-    except subprocess.CalledProcessError as e:
-        print(f"Git error: {e.stderr}", file=sys.stderr)
+    except subprocess.CalledProcessError:
         return False
 
 def get_git_log():
     """Get git commit history with timestamps."""
     cmd = ['git', 'log', '--format=%at %H %an']
     
-    # In GitHub Actions, let's print more verbose output for debugging
-    if os.environ.get('GITHUB_ACTIONS'):
-        print(f"Running git command: {' '.join(cmd)}", file=sys.stderr)
-    
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
     commits = []
     
-    lines = result.stdout.strip().split('\n')
-    if not lines or not lines[0]:
-        print("Warning: No commit history found", file=sys.stderr)
-        return []
-        
-    for line in lines:
+    for line in result.stdout.strip().split('\n'):
         if not line.strip():
             continue
         parts = line.split(' ', 2)
@@ -51,12 +37,8 @@ def get_git_log():
             })
 
     # Filter out bot commits
-    filtered_commits = [c for c in commits if not c['author'].endswith('[bot]')]
-    
-    # Print some debug info in GitHub Actions
-    if os.environ.get('GITHUB_ACTIONS'):
-        print(f"Found {len(commits)} total commits, {len(filtered_commits)} after filtering", file=sys.stderr)
-    
+    filtered_commits = [c for c in commits if c['author'] != 'github-actions[bot]']
+
     return sorted(filtered_commits, key=lambda x: x['timestamp'])
 
 def group_commits_into_sessions(commits, session_threshold_mins=30):
@@ -133,30 +115,18 @@ def main():
     parser.add_argument('--max-session', type=int, default=8,
                         help='Maximum session duration in hours (default: 8)')
     parser.add_argument('--output-file', help='Optional: File to write markdown stats to.')
-    parser.add_argument('--debug', action='store_true', help='Print debug information')
 
     args = parser.parse_args()
     
-    # Print parameters in debug mode or in GitHub Actions
-    if args.debug or os.environ.get('GITHUB_ACTIONS'):
-        print(f"Running with parameters:", file=sys.stderr)
-        print(f"  Session gap: {args.session_gap} minutes", file=sys.stderr)
-        print(f"  Min session: {args.min_session} minutes", file=sys.stderr)
-        print(f"  Max session: {args.max_session} hours", file=sys.stderr)
-        print(f"  Current directory: {os.getcwd()}", file=sys.stderr)
-    
     if not check_git_repo():
         print("Error: Not a git repository", file=sys.stderr)
-        # In GitHub Actions, output something to avoid breaking the workflow
-        if os.environ.get('GITHUB_ACTIONS'):
-            print("- Error: Not a git repository\n- Please check the action setup")
         sys.exit(1)
     
     try:
         commits = get_git_log()
         
         if not commits:
-            stats_output = "- No commit history found to generate statistics.\n- Please ensure the repository has commits and history is fetched."
+            stats_output = "No commit history found to generate statistics."
         else:
             sessions = group_commits_into_sessions(commits, args.session_gap)
             durations = calculate_session_durations(sessions, args.min_session, args.max_session)
@@ -209,12 +179,6 @@ def main():
 
     except Exception as e:
         print(f"Error generating stats: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        
-        # In GitHub Actions, output something to avoid breaking the workflow completely
-        if os.environ.get('GITHUB_ACTIONS'):
-            print(f"- Error: Failed to generate git stats\n- Reason: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":
