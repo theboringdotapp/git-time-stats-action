@@ -19,7 +19,7 @@ Add the following to your GitHub workflow:
 
 ```yaml
 - name: Calculate Git Time Stats
-  uses: theboringdotapp/git-time-stats-action@v1
+  uses: theboringdotapp/git-time-stats-action@1.1
   with:
     readme-path: 'README.md'  # Default is README.md
     commit-changes: 'true'    # Auto-commit the changes back to the repository

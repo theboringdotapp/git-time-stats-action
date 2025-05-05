@@ -1,11 +1,6 @@
 name: Update README with Git Time Stats
 
-on:
-  # Run daily at midnight
-  schedule:
-    - cron: '0 0 * * *'
-  
-  # Run on push to main branch
+on:  # Run on push to main branch
   push:
     branches:
       - main

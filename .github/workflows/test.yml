@@ -37,7 +37,6 @@ jobs:
           min-session: "5"
           max-session: "8"
           commit-changes: "true"
-          commit-message: "test: Update test README with time stats"
 
       - name: Display stats
         run: |
