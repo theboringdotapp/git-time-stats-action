@@ -47,8 +47,11 @@ runs:
       id: generate_stats
       shell: bash
       run: |
-        # Run the time estimator script
-        python ${{ github.action_path }}/git_time_estimator.py \
+        # Copy the script to the workspace
+        cp ${{ github.action_path }}/git_time_estimator.py ./git_time_estimator_temp.py
+        
+        # Run the time estimator script from the repository root directory
+        python ./git_time_estimator_temp.py \
           --session-gap ${{ inputs.session-gap }} \
           --min-session ${{ inputs.min-session }} \
           --max-session ${{ inputs.max-session }} > stats_output.txt
@@ -62,17 +65,28 @@ runs:
         echo "stats<<EOF" >> $GITHUB_OUTPUT
         echo "$raw_stats" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
+        
+        # Clean up the temporary script
+        rm ./git_time_estimator_temp.py
     
     - name: Update README
       if: inputs.update-readme == 'true'
       id: update_readme
       shell: bash
       run: |
+        # Copy the update script to the workspace
+        mkdir -p ./temp_scripts
+        cp ${{ github.action_path }}/scripts/update_readme.py ./temp_scripts/update_readme.py
+        chmod +x ./temp_scripts/update_readme.py
+        
         # Decode the Base64 stats content
         decoded_stats=$(echo "${{ steps.generate_stats.outputs.stats_content_b64 }}" | base64 -d)
         
         # Pass decoded content via environment variable
         export STATS_CONTENT="$decoded_stats"
         
-        # Run the update script
-        python ${{ github.action_path }}/scripts/update_readme.py ${{ inputs.readme-path }} 
+        # Run the update script from the repository root
+        python ./temp_scripts/update_readme.py ${{ inputs.readme-path }}
+        
+        # Clean up temporary files
+        rm -rf ./temp_scripts 

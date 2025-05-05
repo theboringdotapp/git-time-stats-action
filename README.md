@@ -102,6 +102,16 @@ jobs:
 - bob: 17h 15m (40.6%)
 ```
 
+## Troubleshooting
+
+### "Error: Not a git repository"
+
+If you encounter an error like `Error: Not a git repository`, make sure:
+
+1. You have properly checked out your repository with `actions/checkout` before calling this action
+2. You're using `fetch-depth: 0` with checkout to ensure full git history is available
+3. You're using the latest version of this action
+
 ## License
 
 MIT 
